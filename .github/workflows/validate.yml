@@ -1,0 +1,119 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  carriers:
+    name: Text carriers in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The five principles are one text shipped in four files. Only the body
+      # may differ in frontmatter, title and intro paragraph.
+      - name: Four carriers share one body
+        run: |
+          set -euo pipefail
+
+          # §1-§5 body, normalized: drop the "---" separator and the closing
+          # footer line (SKILL.md legitimately omits both), trim trailing blanks.
+          core() {
+            awk '
+              /^## 1\./ { p = 1 }
+              p && /^# / { exit }
+              p {
+                if ($0 ~ /^---$/) next
+                if ($0 ~ /^\*\*These guidelines are working if:/) next
+                buf[n++] = $0
+              }
+              END {
+                while (n > 0 && buf[n-1] ~ /^[[:space:]]*$/) n--
+                for (i = 0; i < n; i++) print buf[i]
+              }
+            ' "$1"
+          }
+
+          status=0
+          for f in AGENTS.md \
+                   .cursor/rules/karpathy-guidelines.mdc \
+                   skills/karpathy-guidelines/SKILL.md; do
+            if diff -u <(core CLAUDE.md) <(core "$f"); then
+              echo "ok: CLAUDE.md body == $f"
+            else
+              echo "::error file=$f::principles body drifted from CLAUDE.md"
+              status=1
+            fi
+          done
+
+          # The footer is dropped by core(); assert the three carriers that are
+          # supposed to have it still do, so an edit to it is still caught.
+          for f in CLAUDE.md AGENTS.md .cursor/rules/karpathy-guidelines.mdc; do
+            if ! grep -q '^\*\*These guidelines are working if:' "$f"; then
+              echo "::error file=$f::missing the closing 'These guidelines are working if:' line"
+              status=1
+            fi
+          done
+
+          exit $status
+
+      - name: Plugin version and name agree
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          p = json.load(open('.claude-plugin/plugin.json'))
+          m = json.load(open('.claude-plugin/marketplace.json'))
+          errs = []
+          versions = {p['version'], m['plugins'][0]['version'], m['metadata']['version']}
+          if len(versions) != 1:
+              errs.append(f"version mismatch across manifests: {sorted(versions)}")
+          if p['name'] != m['plugins'][0]['name']:
+              errs.append(f"name mismatch: {p['name']!r} != {m['plugins'][0]['name']!r}")
+          for e in errs:
+              print(f"::error::{e}")
+          print("versions:", sorted(versions), "| name:", p['name'])
+          sys.exit(1 if errs else 0)
+          PY
+
+      - name: Relative links resolve
+        run: |
+          status=0
+          for f in README.md README.zh.md CURSOR.md EXAMPLES.md CLAUDE.md AGENTS.md; do
+            while read -r target; do
+              [ -e "$target" ] || { echo "::error file=$f::broken relative link -> $target"; status=1; }
+            done < <(grep -oE '\]\([^)#][^)]*\)' "$f" \
+                     | sed -E 's/^\]\(//; s/\)$//' \
+                     | grep -vE '^(https?:|mailto:)' | sort -u)
+          done
+          exit $status
+
+  plugin-manifests:
+    name: Claude Code plugin manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      # --strict: treat warnings as errors. Clean for the marketplace manifest.
+      - name: Validate marketplace manifest
+        run: claude plugin validate . --strict
+
+      # Deliberately not --strict. This repo's CLAUDE.md must sit at the repo
+      # root - it is both the curl-installable product and this repo's own
+      # instructions - and marketplace source "./" makes that root the plugin
+      # root too. Claude Code correctly warns that a root CLAUDE.md is not
+      # loaded as plugin context; the skill at
+      # skills/karpathy-guidelines/SKILL.md is what ships context. The warning
+      # is expected, so this step gates on real errors only.
+      - name: Validate plugin manifest
+        run: claude plugin validate .claude-plugin/plugin.json
