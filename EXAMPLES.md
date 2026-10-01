@@ -495,6 +495,74 @@ def sort_scores(scores):
 
 ---
 
+## 5. Verification First
+
+### Example 1: Claiming Done Without Running Anything
+
+**User Request:** "Add a retry to the upload function"
+
+**❌ What LLMs Do (Assert Success)**
+
+```
+Done! I added retry logic with exponential backoff to upload_file().
+The function now retries up to 3 times on transient failures.
+```
+
+No command was run, no output shown. The retry path calls a helper that may not exist, and the reviewer has no way to tell.
+
+**✅ What Should Happen (Run It, Then Report)**
+
+```
+Added retry with exponential backoff to upload_file(). What I ran:
+
+    pytest tests/test_upload.py::test_retries_on_timeout -q
+    → 1 passed
+
+Not verified: the test stubs the HTTP client, so the real network path
+(an actual 503 from the endpoint) is untested. I also have not exercised
+the case where all 3 retries are exhausted.
+```
+
+**Only claimed:** what was observed, plus an explicit list of what wasn't.
+
+### Example 2: Invented Dependency and Hardcoded Secret
+
+**User Request:** "Cache the API responses"
+
+**❌ What LLMs Do (Invent and Hardcode)**
+
+```python
+import redis_cache                 # package does not exist
+from aiocache import cached        # not in requirements.txt
+
+CACHE = redis_cache.connect("redis://localhost:6379")
+API_KEY = "sk-live-9f3a..."        # credential committed to source
+```
+
+**Problems:**
+- `redis_cache` is not a real package - the import will fail at runtime
+- `aiocache` was never added to `requirements.txt`
+- A live-looking API key is now in the repository
+
+**✅ What Should Happen (Use What Exists, Ask First)**
+
+```
+Before adding a cache, I need to know which backend you already run.
+
+Two things I won't do without asking:
+- add a new dependency for this
+- put a connection string or key in source - it should come from the environment
+
+If Redis is already configured, its client is already a dependency and I'll use it.
+If not, a module-level dict is correct for now and we revisit when it hurts.
+
+I have not verified which one applies - confirm and I'll proceed.
+```
+
+**Deferred:** the dependency choice, until the actual environment is known.
+
+---
+
 ## Anti-Patterns Summary
 
 | Principle | Anti-Pattern | Fix |
@@ -503,6 +571,8 @@ def sort_scores(scores):
 | Simplicity First | Strategy pattern for single discount calculation | One function until complexity is actually needed |
 | Surgical Changes | Reformats quotes, adds type hints while fixing bug | Only change lines that fix the reported issue |
 | Goal-Driven | "I'll review and improve the code" | "Write test for bug X → make it pass → verify no regressions" |
+| Verification First | "Done!" with no command run and no output shown | State the command, the observed result, and what remains unverified |
+| Verification First | Imports a package that doesn't exist, hardcodes an API key | Use what's already installed; ask before adding deps or secrets |
 
 ## Key Insight
 
