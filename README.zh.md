@@ -120,7 +120,7 @@ LLM 经常默默选择一种解释然后执行。这个原则强制明确推理�
 
 在 Claude Code 中，首先添加插件市场：
 ```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
+/plugin marketplace add binbinao/andrej-karpathy-skills
 ```
 
 然后安装插件：
@@ -134,13 +134,13 @@ LLM 经常默默选择一种解释然后执行。这个原则强制明确推理�
 
 新项目：
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+curl -o CLAUDE.md https://raw.githubusercontent.com/binbinao/andrej-karpathy-skills/main/CLAUDE.md
 ```
 
 已有项目（追加）：
 ```bash
 echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
+curl https://raw.githubusercontent.com/binbinao/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
 
 **选项 C：AGENTS.md（跨工具）**
@@ -148,7 +148,7 @@ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/
 [AGENTS.md](https://agents.md) 是厂商中立的指令文件标准，由 Linux 基金会下的 Agentic AI Foundation 维护，Codex、Cursor 等众多 agent 均已支持。如果你跨工具工作、而非只用 Claude Code，选这个：
 
 ```bash
-curl -o AGENTS.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/AGENTS.md
+curl -o AGENTS.md https://raw.githubusercontent.com/binbinao/andrej-karpathy-skills/main/AGENTS.md
 ```
 
 > **需要知道：** Claude Code 优先使用 `CLAUDE.md`，只有在目录及其任何上级目录都没有 `CLAUDE.md` 时才会回退到 `AGENTS.md`。因此给一个已依赖 `AGENTS.md` 的项目添加 `CLAUDE.md`，会让 `AGENTS.md` 静默失效。二选一，或让两者保持一致。

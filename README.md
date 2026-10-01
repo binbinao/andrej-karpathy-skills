@@ -120,7 +120,7 @@ Beyond the loop itself, three habits:
 
 From within Claude Code, first add the marketplace:
 ```
-/plugin marketplace add forrestchang/andrej-karpathy-skills
+/plugin marketplace add binbinao/andrej-karpathy-skills
 ```
 
 Then install the plugin:
@@ -134,13 +134,13 @@ This installs the guidelines as a Claude Code plugin, making the skill available
 
 New project:
 ```bash
-curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+curl -o CLAUDE.md https://raw.githubusercontent.com/binbinao/andrej-karpathy-skills/main/CLAUDE.md
 ```
 
 Existing project (append):
 ```bash
 echo "" >> CLAUDE.md
-curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
+curl https://raw.githubusercontent.com/binbinao/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
 
 **Option C: AGENTS.md (cross-tool)**
@@ -148,7 +148,7 @@ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/
 [AGENTS.md](https://agents.md) is the vendor-neutral instruction-file standard, stewarded by the Agentic AI Foundation under the Linux Foundation and read by Codex, Cursor, and a broad set of other agents. Reach for this if you work across tools rather than in Claude Code alone:
 
 ```bash
-curl -o AGENTS.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/AGENTS.md
+curl -o AGENTS.md https://raw.githubusercontent.com/binbinao/andrej-karpathy-skills/main/AGENTS.md
 ```
 
 > **Worth knowing:** Claude Code prefers `CLAUDE.md` and only falls back to `AGENTS.md` when no `CLAUDE.md` exists in the directory or any directory above it. So adding a `CLAUDE.md` to a project that already relies on `AGENTS.md` silently stops the `AGENTS.md` from being read. Pick one, or keep them identical.
